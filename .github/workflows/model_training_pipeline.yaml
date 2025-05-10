@@ -3,7 +3,7 @@ name: citibike_model_training_pipeline
 on:
   schedule:
     - cron: '0 0 * * 1'  # Runs every Monday at midnight
-  workflow_dispatch:      # Allows manual trigger
+  workflow_dispatch:       # Allows manual trigger
 
 jobs:
   model-training:
@@ -24,4 +24,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Train Model
-        run: python scripts/train_model.py
+        run: python src/feature_pipeline.py

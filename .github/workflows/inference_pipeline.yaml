@@ -5,7 +5,7 @@ on:
     workflows: ["citibike_feature_engineering_pipeline"]
     types:
       - completed
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:       # Allows manual trigger
 
 jobs:
   inference:
@@ -26,4 +26,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Inference Script
-        run: python scripts/inference.py
+        run: python src/inference.py
