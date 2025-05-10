@@ -26,4 +26,5 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Inference Script
-        run: python src/inference.py
+        run: |
+          PYTHONPATH=. python src/inference.py

@@ -24,4 +24,5 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Feature Engineering Script
-        run: python src/feature_pipeline.py
+        run: |
+          PYTHONPATH=. python src/feature_pipeline.py
