@@ -20,10 +20,11 @@ from src.data_utils import transform_ts_data_info_features
 
 
 def get_hopsworks_project() -> hopsworks.project.Project:
-    """Log in to Hopsworks and return the project handle."""
+    """Log in to Hopsworks using the GitHub Actions secret."""
+    api_key = os.environ["HOPSWORKS_API_KEY"]
     return hopsworks.login(
-        project       = config.HOPSWORKS_PROJECT_NAME,
-        api_key_value = config.HOPSWORKS_API_KEY,
+        project=config.HOPSWORKS_PROJECT_NAME,
+        api_key_value=api_key,
     )
 
 
@@ -33,20 +34,9 @@ def get_feature_store() -> FeatureStore:
     return project.get_feature_store()
 
 
-# def load_model_from_registry(model_name: str = None, version: int = None):
-#     """
-#     Download & load the latest sklearn Pipeline you registered in Hopsworks.
-#     Returns a joblib-loaded pipeline object.
-#     """
-#     project        = get_hopsworks_project()
-#     registry       = project.get_model_registry()
-#     models         = registry.get_models(name = model_name or config.MODEL_NAME)
-#     best           = max(models, key=lambda m: m.version if version is None else (m.version == version))
-#     download_dir   = best.download()
-#     artifact_path  = Path(download_dir) / "lgb_model.pkl"
-#     return joblib.load(artifact_path)
 def load_model_from_registry(model_name=None, version=None):
-    project = get_hopsworks_project()  # Add this line to fix the error
+    """Download and load the latest sklearn/XGBoost pipeline from Hopsworks."""
+    project = get_hopsworks_project()
     registry = project.get_model_registry()
     models = registry.get_models(name=model_name or config.MODEL_NAME)
 
@@ -60,12 +50,9 @@ def load_model_from_registry(model_name=None, version=None):
     return joblib.load(model_path)
 
 
-
 def get_model_predictions(model, features: pd.DataFrame) -> pd.DataFrame:
-    """
-    Predict demand using trained model. Only keep expected lag features.
-    """
-    expected_lags = ["rides_t-1", "rides_t-2", "rides_t-3"]  # match training
+    """Predict demand using trained model. Only keep expected lag features."""
+    expected_lags = ["rides_t-1", "rides_t-2", "rides_t-3"]
     X_input = features[expected_lags]
 
     preds_array = model.predict(X_input)
@@ -78,9 +65,6 @@ def get_model_predictions(model, features: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-
-# If you still want to be able to run `python -m src.inference` as a standalone,
-# you can leave your old main() here (it won’t be imported by pipelines/...)
 def main():
     """
     Legacy entrypoint.  
@@ -95,16 +79,16 @@ def main():
     latest_hr = pd.to_datetime(hist["pickup_hour"].max(), utc=True)
 
     # 2) sliding window bounds
-    window_size  = 24 * 28
-    fetch_from   = latest_hr - pd.Timedelta(hours=window_size + 1)
-    fetch_to     = latest_hr
+    window_size = 24 * 28
+    fetch_from = latest_hr - pd.Timedelta(hours=window_size + 1)
+    fetch_to = latest_hr
 
     # 3) fetch raw timeseries
     fv = fs.get_feature_view(name=config.FEATURE_VIEW_NAME, version=config.FEATURE_VIEW_VERSION)
     ts = (
         fv.get_batch_data(start_time=fetch_from, end_time=fetch_to)
           .loc[lambda df: df.pickup_hour.between(fetch_from, fetch_to)]
-          .sort_values(["pickup_location_id","pickup_hour"])
+          .sort_values(["pickup_location_id", "pickup_hour"])
     )
 
     # 4) build features
@@ -113,27 +97,27 @@ def main():
 
     # 5) load & predict
     pipeline = load_model_from_registry()
-    preds    = get_model_predictions(pipeline, feats)
-    preds    = preds.rename(columns={"predicted_demand": "predicted_rides"})
+    preds = get_model_predictions(pipeline, feats)
+    preds = preds.rename(columns={"predicted_demand": "predicted_rides"})
     preds["pickup_hour"] = latest_hr + pd.Timedelta(hours=1)
 
     # 6) write back
     from hsfs.feature import Feature
     pred_fg = fs.get_or_create_feature_group(
-        name         = config.FEATURE_GROUP_MODEL_PREDICTION,
-        version      = config.FEATURE_GROUP_MODEL_PREDICTION_VERSION,
-        description  = "Next-hour predictions",
-        primary_key  = ["pickup_location_id","pickup_hour"],
-        event_time   = "pickup_hour",
+        name=config.FEATURE_GROUP_MODEL_PREDICTION,
+        version=config.FEATURE_GROUP_MODEL_PREDICTION_VERSION,
+        description="Next-hour predictions",
+        primary_key=["pickup_location_id", "pickup_hour"],
+        event_time="pickup_hour",
         online_enabled=False,
-        features     = [
-            Feature("pickup_location_id","string"),
-            Feature("pickup_hour","timestamp"),
-            Feature("predicted_rides","int"),
+        features=[
+            Feature("pickup_location_id", "string"),
+            Feature("pickup_hour", "timestamp"),
+            Feature("predicted_rides", "int"),
         ]
     )
     preds["pickup_location_id"] = preds["pickup_location_id"].astype(str)
-    preds["predicted_rides"]    = preds["predicted_rides"].astype("int32")
+    preds["predicted_rides"] = preds["predicted_rides"].astype("int32")
     pred_fg.insert(preds, write_options={"wait_for_job": False})
 
     print("✅ Done, predictions up to", preds["pickup_hour"].iloc[0])
