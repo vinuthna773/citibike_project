@@ -1,0 +1,3 @@
+MLFLOW_TRACKING_URI=https://dagshub.com/ryallavinuthnareddy/citibikeproject.mlflow
+MLFLOW_TRACKING_USERNAME=ryallavinuthnareddy
+MLFLOW_TRACKING_PASSWORD=92dd14cdf34bef08d8871bf22dbdc0869a9198cf

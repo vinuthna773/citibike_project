@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/Vinuthna/Downloads/Final_Project/Final_Project/notebooks/mlruns/0/eee078d6a06a4a5db33fa59b99f9553a/artifacts
+end_time: 1746934847632
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: eee078d6a06a4a5db33fa59b99f9553a
+run_name: silent-doe-204
+run_uuid: eee078d6a06a4a5db33fa59b99f9553a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1746934847625
+status: 3
+tags: []
+user_id: vinuthna

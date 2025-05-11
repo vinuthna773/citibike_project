@@ -1,0 +1,6 @@
+artifact_location: file:///Users/Vinuthna/Downloads/Final_Project/Final_Project/notebooks/mlruns/603123968809377438
+creation_time: 1746940256830
+experiment_id: '603123968809377438'
+last_update_time: 1746940256830
+lifecycle_stage: active
+name: xgboost-lag3
